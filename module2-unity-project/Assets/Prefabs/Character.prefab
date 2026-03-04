@@ -297,9 +297,17 @@ MonoBehaviour:
   moveInput: {fileID: -4216954547961224051, guid: c8d711906fd00b548a67627abc85f162, type: 3}
   attackInput: {fileID: 7926257090387058774, guid: c8d711906fd00b548a67627abc85f162, type: 3}
   weaponSwitchInput: {fileID: 4665785223893663966, guid: c8d711906fd00b548a67627abc85f162, type: 3}
+  showInventoryInput: {fileID: 9013864580926559395, guid: c8d711906fd00b548a67627abc85f162, type: 3}
+  dropInventoryInput: {fileID: -4876639222528186482, guid: c8d711906fd00b548a67627abc85f162, type: 3}
   shovel: {fileID: 2494314743394978031}
   rock: {fileID: 229478814693656329}
   armRight: {fileID: 4521325851181315538}
+  OnInventoryShown:
+    m_PersistentCalls:
+      m_Calls: []
+  OnItemDropped:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!4 &4192177904480511863 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2479020134676697509, guid: 31e86048e2bc46942a9ec06bc45105c8, type: 3}

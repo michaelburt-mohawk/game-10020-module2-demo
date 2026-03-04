@@ -2,36 +2,56 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.InputSystem;
 
 public class Character : MonoBehaviour
 {
+    [Header("Physics Parameters")]
+    public float moveSpeed = 5.0f;
+    public float gravity = -9.81f;
+    public float throwForce = 1.0f;
+
+    [Header("Prefabs")]
+    public Rock rockPrefab;
+
+    [Header("Input Actions")]
+    public InputActionReference moveInput;
+    public InputActionReference attackInput;
+    public InputActionReference weaponSwitchInput;
+    public InputActionReference showInventoryInput;
+    public InputActionReference dropInventoryInput;
+
+    [Header("Weapons")]
+    public Shovel shovel;
+    public Rock rock;
+    public GameObject armRight;
+
+    [HideInInspector]
+    public UnityEvent<bool> OnInventoryShown;
+
+    [HideInInspector]
+    public UnityEvent OnItemDropped;
+
     CharacterController controller;
     Vector3 velocity;
     Animator animator;
     Collider shovelCollider;
 
-    public float moveSpeed = 5.0f;
-    public float gravity = -9.81f;
-    public float throwForce = 1.0f;
-
-    public Rock rockPrefab;
-
-    public InputActionReference moveInput;
-    public InputActionReference attackInput;
-    public InputActionReference weaponSwitchInput;
-    public Shovel shovel;
-
-    public Rock rock;
-    
-    public GameObject armRight;
-
     bool shortRangeAttack = true;
     bool startRockSpawn = false;
     float rockTimer = 0.0f;
 
+    bool showInventory = false;
+
     void Awake()
     {
+        if (OnInventoryShown == null)
+            OnInventoryShown = new UnityEvent<bool>();
+
+        if (OnItemDropped == null)
+            OnItemDropped = new UnityEvent();
+
         controller = GetComponent<CharacterController>();
         animator = GetComponent<Animator>();
 
@@ -39,6 +59,28 @@ public class Character : MonoBehaviour
         shovelCollider.enabled = false;
 
         shortRangeAttack = true;
+
+        showInventoryInput.action.performed += ShowInventoryPerformed;
+        showInventoryInput.action.canceled += ShowInventoryCanceled;
+
+        dropInventoryInput.action.performed += DropInventoryPerformed;
+    }
+
+    private void DropInventoryPerformed(InputAction.CallbackContext obj)
+    {
+        OnItemDropped.Invoke();
+    }
+
+    private void ShowInventoryCanceled(InputAction.CallbackContext obj)
+    {
+        showInventory = false;
+        OnInventoryShown.Invoke(showInventory);
+    }
+
+    private void ShowInventoryPerformed(InputAction.CallbackContext obj)
+    {
+        showInventory = true;
+        OnInventoryShown.Invoke(showInventory);
     }
 
     private void Start()
@@ -48,10 +90,12 @@ public class Character : MonoBehaviour
 
     private void Update()
     {
-        PlayerMotion();
+        bool inputEnabled = !showInventory;
+
+        PlayerMotion(inputEnabled);
 
         bool attack = attackInput.action.WasPressedThisFrame();
-        if (attack)
+        if (attack && inputEnabled)
         {
             if (shortRangeAttack)
             {
@@ -70,7 +114,7 @@ public class Character : MonoBehaviour
         }
 
         bool weaponSwitch = weaponSwitchInput.action.WasPressedThisFrame();
-        if (weaponSwitch)
+        if (weaponSwitch && inputEnabled)
         {
             shortRangeAttack = !shortRangeAttack;
             UpdateWeapon();
@@ -80,8 +124,10 @@ public class Character : MonoBehaviour
         if (startRockSpawn) SpawnRockDelay();
     }
 
-    void PlayerMotion()
+    void PlayerMotion(bool inputEnabled)
     {
+        if (!inputEnabled) return;
+
         // the following is pretty standard character controller code
         
         // snap the player to the ground if already grounded

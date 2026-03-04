@@ -8,29 +8,54 @@ public class InventoryManager : MonoBehaviour
     [HideInInspector]
     public UnityEvent OnInventoryChanged;
 
+    [HideInInspector]
+    public UnityEvent<InventoryItem> OnInventorySpawned;
+
+    [HideInInspector]
+    public UnityEvent OnInventoryFull;
+
     public Dictionary<InventoryItem, int> inventory = new Dictionary<InventoryItem, int>();
 
+    public InventoryItem activeItem = InventoryItem.Pumpkin;
     public void Awake()
     {
-        if (OnInventoryChanged == null) OnInventoryChanged = new UnityEvent();
+        if (OnInventoryChanged == null)
+            OnInventoryChanged = new UnityEvent();
+
+        if (OnInventorySpawned == null)
+            OnInventorySpawned = new UnityEvent<InventoryItem>();
+
+        if (OnInventoryFull == null)
+            OnInventoryFull = new UnityEvent();
 
         inventory[InventoryItem.Pumpkin] = 0;
         inventory[InventoryItem.Lantern] = 0;
         inventory[InventoryItem.Coffin] = 0;
     }
 
-    public void PickUpInventory(InventoryItem item)
+    public void PickUpInventory(Inventory inventoryObject)
     {
-        inventory[item] += 1;
-        OnInventoryChanged.Invoke();
+        if (inventory[inventoryObject.item] < 2)
+        {
+            inventory[inventoryObject.item] += 1;
+            OnInventoryChanged.Invoke();
+
+            Destroy(inventoryObject.gameObject);
+        }
+        else
+        {
+            OnInventoryFull.Invoke();
+        }
     }
 
-    public void DropInventory(InventoryItem item)
+    public void DropInventory()
     {
-        if (inventory[item] > 0)
+        // we now just drop the active item, we don't need any additional parameters
+        if (inventory[activeItem] > 0)
         {
-            inventory[item] -= 1;
+            inventory[activeItem] -= 1;
             OnInventoryChanged.Invoke();
+            OnInventorySpawned.Invoke(activeItem);
         }
     }
 

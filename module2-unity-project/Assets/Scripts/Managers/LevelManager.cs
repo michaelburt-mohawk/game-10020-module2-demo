@@ -4,18 +4,25 @@ using UnityEngine;
 
 public class LevelManager : MonoBehaviour
 {
-    // managers
+    [Header("Managers")]
     public InventoryManager inventoryManager;
     public UIManager uiManager;
     public GameObject inventory;
 
-    public Inventory lantern;
+    [Header("Character Controller")]
+    public Character character;
 
-    // game system objects
+    [Header("Game system objects")]
+    public Inventory lantern;
     public GameObject barriers1;
     public Toggle toggle1;
     public WallEye wallEye;
     public Door door;
+
+    [Header("Prefabs")]
+    public Inventory pumpkinPrefab;
+    public Inventory lanternPrefab;
+    public Inventory coffinPrefab;
 
     // the level manager is responsible for connecting the core game system events
     // notice that these events have arguments - it's not possible to pass arguments to
@@ -26,6 +33,13 @@ public class LevelManager : MonoBehaviour
     {
         // inventory events
         inventoryManager.OnInventoryChanged.AddListener(uiManager.UpdateInventoryUI);
+        inventoryManager.OnInventoryChanged.AddListener(LockDoorInventory);
+        inventoryManager.OnInventorySpawned.AddListener(SpawnInventory);
+        inventoryManager.OnInventoryFull.AddListener(uiManager.ShowInventoryFull);
+
+        // this unlocks the door for this SPECIFIC lantern
+        //lantern.OnItemCollected.AddListener(LockDoorItemPickup);
+
         foreach (Transform child in inventory.transform)
         {
             Inventory inventory = child.GetComponent<Inventory>();
@@ -40,39 +54,15 @@ public class LevelManager : MonoBehaviour
         }
 
         toggle1.OnToggle.AddListener(wallEye.OpenClose);
-
         wallEye.OnEyeStateChanged.AddListener(LockDoorWallEye);
 
-        // this unlocks the door for this SPECIFIC lantern
-        //lantern.OnItemCollected.AddListener(LockDoorItemPickup);
-        inventoryManager.OnInventoryChanged.AddListener(LockDoorAnyItemPickup);
+        character.OnInventoryShown.AddListener(uiManager.ShowInventory);
+        character.OnItemDropped.AddListener(inventoryManager.DropInventory);
     }
 
-    // "buffer" event function
-    void LockDoorWallEye(WallEyeState eyeState)
-    {
-        LockDoor(eyeState, false);
-    }
-
-    void LockDoorItemPickup(InventoryItem item)
-    {
-        if (item == InventoryItem.Lantern)
-        {
-            LockDoor(WallEyeState.Closed, true);
-        }
-    }
-
-    void LockDoorAnyItemPickup()
+    void LockDoorInventory()
     {
         if (inventoryManager.inventory[InventoryItem.Lantern] > 0)
-        {
-            LockDoor(WallEyeState.Closed, true);
-        }
-    }
-    
-    void LockDoor(WallEyeState eyeState, bool keyCollected)
-    {
-        if (eyeState == WallEyeState.Defeated || keyCollected)
         {
             door.SetLock(false);
         }
@@ -80,5 +70,42 @@ public class LevelManager : MonoBehaviour
         {
             door.SetLock(true);
         }
+    }
+    
+    void LockDoorWallEye(WallEyeState eyeState)
+    {
+        if (eyeState == WallEyeState.Defeated)
+        {
+            door.SetLock(false);
+        }
+        else
+        {
+            door.SetLock(true);
+        }
+    }
+
+    public void SpawnInventory(InventoryItem item)
+    {
+        switch (item)
+        {
+            case InventoryItem.Pumpkin:
+                SpawnInventoryPrefab(pumpkinPrefab);
+                break;
+            case InventoryItem.Lantern:
+                SpawnInventoryPrefab(lanternPrefab);
+                break;
+            case InventoryItem.Coffin:
+                SpawnInventoryPrefab(coffinPrefab);
+                break;
+        }
+    }
+
+    void SpawnInventoryPrefab(Inventory prefab)
+    {
+        Inventory inventory = Instantiate(prefab);
+        inventory.OnItemCollected.AddListener(inventoryManager.PickUpInventory);
+
+        Vector3 forwardOffset = character.transform.forward * 1.0f;
+        inventory.transform.position = character.transform.position + forwardOffset;
     }
 }

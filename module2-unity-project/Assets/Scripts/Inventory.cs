@@ -8,20 +8,16 @@ public class Inventory : MonoBehaviour, IHittable
     public InventoryItem item;
 
     [HideInInspector]
-    public UnityEvent<InventoryItem> OnItemCollected;
+    public UnityEvent<Inventory> OnItemCollected;
 
     public void Awake()
     {
-        if (OnItemCollected == null) OnItemCollected = new UnityEvent<InventoryItem>();
+        if (OnItemCollected == null) OnItemCollected = new UnityEvent<Inventory>();
     }
 
     public void Hit(GameObject otherGameObject)
     {
-        OnItemCollected.Invoke(item);
-
-        // this potentially has issues - what if the player is not able to pick
-        // up an item?
-        Destroy(gameObject);
+        OnItemCollected.Invoke(this);
     }
 
 }
